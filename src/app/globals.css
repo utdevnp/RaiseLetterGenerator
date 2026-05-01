@@ -1,4 +1,4 @@
-@import 'bootstrap/dist/css/bootstrap.min.css';
+/* Bootstrap loaded via CDN in layout.tsx */
 
 * {
   box-sizing: border-box;

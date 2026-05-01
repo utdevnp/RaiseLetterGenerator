@@ -68,7 +68,10 @@ export default function Home() {
   };
 
   const handleDownloadAll = async () => {
-    if (generatedHtml.length === 0) return;
+    if (generatedHtml.length === 0) {
+      alert("Please upload employee data first");
+      return;
+    }
 
     setDownloadingZip(true);
     try {
@@ -324,17 +327,13 @@ export default function Home() {
                       return (
                         <button
                           key={emp.serialNo}
-                          className={`list-group-item list-group-item-action ${
-                            originalIndex === selectedIndex ? "active" : ""
-                          }`}
+                          className={`list-group-item list-group-item-action ${originalIndex === selectedIndex ? "active text-white" : ""}`}
                           onClick={() => setSelectedIndex(originalIndex)}
                         >
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <strong>{emp.serialNo}.</strong> {emp.name}
-                              <div className="small text-muted">
-                                {emp.position}
-                              </div>
+                              <div className={`fw-semibold ${originalIndex === selectedIndex ? 'text-white' : ''}`}>{emp.serialNo}. {emp.name}</div>
+                              <small className={originalIndex === selectedIndex ? 'text-white-50' : 'text-muted'}>{emp.position}</small>
                             </div>
                           </div>
                         </button>
@@ -360,7 +359,7 @@ export default function Home() {
                       <tr key={emp.serialNo}>
                         <td>{emp.serialNo}</td>
                         <td>{emp.name}</td>
-                        <td>${emp.total.toLocaleString()}</td>
+                        <td>{emp.total.toLocaleString()}</td>
                       </tr>
                     ))}
                     {employees.length > 5 && (
