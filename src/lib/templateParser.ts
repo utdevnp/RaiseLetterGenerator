@@ -20,9 +20,9 @@ export function parseTemplate(template: string, employee: EmployeeData): string 
 
   parsed = parsed.replace(/{name}/g, employee.name);
   parsed = parsed.replace(/{position}/g, employee.position);
-  parsed = parsed.replace(/{date}/g, employee.date || '2080/04/04');
-  parsed = parsed.replace(/{newPosition}/g, employee.newPosition || employee.position);
-  parsed = parsed.replace(/{effectiveDate}/g, employee.effectiveDate || '1st Shrawan, 2080');
+  parsed = parsed.replace(/{date}/g, employee.date);
+  parsed = parsed.replace(/{newPosition}/g, employee.newPosition);
+  parsed = parsed.replace(/{effectiveDate}/g, employee.effectiveDate);
   parsed = parsed.replace(/{previousTotal}/g, formatNumber(employee.previousTotal));
   parsed = parsed.replace(/{basicSalary}/g, formatNumber(employee.basicSalary));
   parsed = parsed.replace(/{dearnessAllowance}/g, formatNumber(employee.dearnessAllowance));
