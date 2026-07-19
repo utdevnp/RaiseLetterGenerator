@@ -74,6 +74,7 @@ export default function HowToUsePage() {
                     <tr><td>Company Name</td><td>Your company name for the signature</td><td>Your Company Name</td></tr>
                     <tr><td>Signatory Name</td><td>The person signing the letter</td><td>Your Name</td></tr>
                     <tr><td>Signatory Designation</td><td>The signatory's job title</td><td>HR Officer</td></tr>
+                    <tr><td>Signature Image</td><td>Upload a signature image to appear in the letter</td><td>None</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -118,6 +119,7 @@ export default function HowToUsePage() {
                     <tr><td><code>{'{signatoryName}'}</code></td><td>Signatory name (from settings)</td></tr>
                     <tr><td><code>{'{signatoryDesignation}'}</code></td><td>Signatory designation (from settings)</td></tr>
                     <tr><td><code>{'{companyName}'}</code></td><td>Company name (from settings)</td></tr>
+                    <tr><td><code>{'{signature}'}</code></td><td>Signature image (uploaded in settings) — invisible if no signature is set</td></tr>
                   </tbody>
                 </table>
               </div>

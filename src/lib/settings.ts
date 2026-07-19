@@ -5,6 +5,7 @@ export interface CompanySettings {
   signatoryName: string;
   signatoryDesignation: string;
   subject: string;
+  signature: string; // base64/png data URL of the signature image
 }
 
 const STORAGE_KEY = 'companySettings';
@@ -13,7 +14,8 @@ export const DEFAULT_SETTINGS: CompanySettings = {
   companyName: 'Your Company Name',
   signatoryName: 'Your Name',
   signatoryDesignation: 'HR Officer',
-  subject: 'Promotion and Raise Letter'
+  subject: 'Promotion and Raise Letter',
+  signature: ''
 };
 
 export function getStoredSettings(): CompanySettings {

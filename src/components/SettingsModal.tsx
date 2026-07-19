@@ -21,11 +21,12 @@ export default function SettingsModal({ isOpen, onClose, onSave }: Props) {
 
   const handleSave = () => {
     saveSettings(settings);
+    onSave?.();
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
-      onSave?.();
-    }, 1000);
+      onClose();
+    }, 800);
   };
 
   const handleReset = () => {
@@ -95,6 +96,47 @@ export default function SettingsModal({ isOpen, onClose, onSave }: Props) {
               onChange={(e) => setSettings({ ...settings, signatoryDesignation: e.target.value })}
               placeholder="Enter designation"
             />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Signature Image</label>
+            <input
+              type="file"
+              className="form-control"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    setSettings({ ...settings, signature: ev.target?.result as string });
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            />
+            {settings.signature ? (
+              <div className="mt-2">
+                <div className="d-flex align-items-center gap-2">
+                  <img
+                    src={settings.signature}
+                    alt="Signature preview"
+                    style={{ maxHeight: '50px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  />
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => setSettings({ ...settings, signature: '' })}
+                    title="Remove signature"
+                  >
+                    <i className="bi bi-x-circle"></i>
+                  </button>
+                </div>
+                <small className="text-muted d-block mt-1">Signature preview shown above.</small>
+              </div>
+            ) : (
+              <small className="text-muted d-block mt-1">
+                Upload a PNG or JPG image of the signature. Use <code>{'{signature}'}</code> in your template.
+              </small>
+            )}
           </div>
         </div>
 

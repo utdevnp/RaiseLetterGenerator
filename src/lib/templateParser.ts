@@ -34,6 +34,16 @@ export function parseTemplate(template: string, employee: EmployeeData): string 
   parsed = parsed.replace(/{total}/g, formatNumber(employee.total));
   parsed = parsed.replace(/{signatoryName}/g, settings.signatoryName);
   parsed = parsed.replace(/{signatoryDesignation}/g, settings.signatoryDesignation);
+
+  // Replace {signature} with an embedded image if available
+  if (settings.signature) {
+    parsed = parsed.replace(
+      /{signature}/g,
+      `<img src="${settings.signature}" alt="Signature" style="max-height: 60px; margin-top: 5px;" />`
+    );
+  } else {
+    parsed = parsed.replace(/{signature}/g, '');
+  }
   parsed = parsed.replace(/{companyName}/g, settings.companyName);
   parsed = parsed.replace(/{subject}/g, settings.subject);
 
@@ -66,6 +76,7 @@ export function getPlaceholders(): string[] {
     '{name}', '{position}', '{date}', '{newPosition}', '{effectiveDate}',
     '{previousTotal}', '{basicSalary}', '{dearnessAllowance}', '{totalCashComponent}',
     '{pfEmployee}', '{grossSalary}', '{lunchAllowance}', '{pfEmployer}', '{total}',
-    '{signatoryName}', '{signatoryDesignation}', '{companyName}', '{subject}'
+    '{signatoryName}', '{signatoryDesignation}', '{companyName}', '{subject}',
+    '{signature}'
   ];
 }

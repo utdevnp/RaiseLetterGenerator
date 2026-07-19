@@ -33,7 +33,6 @@ export default function Home() {
   }, []);
 
   const refreshTemplate = useCallback(() => {
-    setTemplate(getStoredTemplate());
     setSettingsKey((prev) => prev + 1);
   }, []);
 

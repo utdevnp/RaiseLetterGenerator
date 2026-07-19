@@ -68,9 +68,8 @@ In such case, such amount is taxable amount according to Income Tax Act 2058.
 
 <p>Thank You.</p>
 
-<p style="margin-top:40px;">___________________</p>
-
 <p>
+{signature}<br>
 {signatoryName}<br>
 {signatoryDesignation}<br>
 {companyName}
