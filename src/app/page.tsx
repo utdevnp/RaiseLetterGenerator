@@ -467,6 +467,28 @@ export default function Home() {
   );
 }
 
+/**
+ * Wait for every <img> element inside the given container to finish loading,
+ * or until a safety timeout. This ensures images are rendered before
+ * html2canvas captures the container.
+ */
+function waitForContainerImages(container: HTMLElement): Promise<void> {
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if (imgs.length === 0) return Promise.resolve();
+
+  const loads = imgs.map((img) => {
+    // If the image is already complete, resolve immediately
+    if (img.complete) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      img.addEventListener('load', () => resolve(), { once: true });
+      img.addEventListener('error', () => resolve(), { once: true });
+      // Safety timeout in case events never fire
+      setTimeout(() => resolve(), 15000);
+    });
+  });
+  return Promise.all(loads).then(() => undefined);
+}
+
 async function generatePdfBlob(
   html: string,
   employee: EmployeeData,
@@ -476,33 +498,79 @@ async function generatePdfBlob(
 
   const container = document.createElement("div");
   container.innerHTML = html;
-  container.style.position = "absolute";
-  container.style.left = "-10000px";
+
+  // Inject style reset to override Bootstrap's p margin that causes
+  // content to overflow the PDF page boundary.
+  const resetStyle = document.createElement("style");
+  resetStyle.textContent = `p { margin: 0 0 10px 0 !important; }`;
+  container.appendChild(resetStyle);
+
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
   container.style.top = "0";
-  container.style.width = "595px";
-  container.style.padding = "50px 40px";
+  container.style.zIndex = "-1";
+  container.style.width = "451px";
+  container.style.padding = "0";
   container.style.background = "#ffffff";
+  container.style.color = "#000000";
+  container.style.fontWeight = "normal";
   container.style.fontFamily = '"Times New Roman", Times, serif';
   container.style.fontSize = "12px";
-  container.style.lineHeight = "1.5";
+  container.style.lineHeight = "1.4";
   container.style.boxSizing = "border-box";
+  container.style.setProperty("-webkit-font-smoothing", "antialiased");
+  container.style.textRendering = "optimizeLegibility";
 
   document.body.appendChild(container);
 
   try {
+    // Wait for images inside the container to load
+    await waitForContainerImages(container);
+
     const canvas = await html2canvas(container, {
-      scale: 4,
+      scale: 3,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
       removeContainer: false,
-      imageTimeout: 0,
+      imageTimeout: 15000,
       allowTaint: true,
     });
 
-    const imgData = canvas.toDataURL("image/png", 1.0);
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
     const pdf = new jsPDF("p", "pt", "a4");
-    pdf.addImage(imgData, "PNG", 0, 0, 595, 842);
+
+    const pdfW = 595;
+    const pdfH = 842;
+    const marginInch = 72;
+    const contentW = pdfW - 2 * marginInch;
+    const scalePdf = contentW / canvas.width;
+    const renderW = canvas.width * scalePdf;
+    const renderH = canvas.height * scalePdf;
+    const renderX = marginInch;
+    const renderY = marginInch;
+
+    // Multi-page support: if content exceeds available page height, split
+    const pageH = pdfH - 2 * marginInch;
+    if (renderH <= pageH) {
+      pdf.addImage(imgData, "JPEG", renderX, renderY, renderW, renderH);
+    } else {
+      const pageCanvasPx = pageH / scalePdf;
+      let srcY = 0;
+      let pageNum = 0;
+      while (srcY < canvas.height) {
+        if (pageNum > 0) pdf.addPage();
+        const cropH = Math.min(pageCanvasPx, canvas.height - srcY);
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = cropH;
+        const ctx = tempCanvas.getContext("2d")!;
+        ctx.drawImage(canvas, 0, srcY, canvas.width, cropH, 0, 0, canvas.width, cropH);
+        pdf.addImage(tempCanvas.toDataURL("image/jpeg", 0.92), "JPEG", renderX, renderY, renderW, cropH * scalePdf);
+        srcY += cropH;
+        pageNum++;
+      }
+    }
     return pdf.output("blob");
   } finally {
     document.body.removeChild(container);
@@ -518,37 +586,79 @@ async function generateSinglePDFFromHtml(
 
   const container = document.createElement("div");
   container.innerHTML = html;
-  container.style.position = "absolute";
-  container.style.left = "-10000px";
+
+  // Inject style reset to override Bootstrap's p margin that causes
+  // content to overflow the PDF page boundary.
+  const resetStyle = document.createElement("style");
+  resetStyle.textContent = `p { margin: 0 0 10px 0 !important; }`;
+  container.appendChild(resetStyle);
+
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
   container.style.top = "0";
-  container.style.width = "595px";
-  container.style.padding = "50px 40px";
+  container.style.zIndex = "-1";
+  container.style.width = "451px";
+  container.style.padding = "0";
   container.style.background = "#ffffff";
+  container.style.color = "#000000";
+  container.style.fontWeight = "normal";
   container.style.fontFamily = '"Times New Roman", Times, serif';
   container.style.fontSize = "12px";
-  container.style.lineHeight = "1.5";
+  container.style.lineHeight = "1.4";
   container.style.boxSizing = "border-box";
+  container.style.setProperty("-webkit-font-smoothing", "antialiased");
+  container.style.textRendering = "optimizeLegibility";
 
   document.body.appendChild(container);
 
   try {
+    // Wait for images inside the container to load
+    await waitForContainerImages(container);
+
     const canvas = await html2canvas(container, {
-      scale: 4,
+      scale: 3,
       useCORS: true,
       logging: false,
       backgroundColor: "#ffffff",
       removeContainer: false,
-      imageTimeout: 0,
+      imageTimeout: 15000,
       allowTaint: true,
     });
 
-    const imgData = canvas.toDataURL("image/png", 1.0);
+    const imgData = canvas.toDataURL("image/jpeg", 0.92);
     const pdf = new jsPDF("p", "pt", "a4");
 
-    const pdfWidth = 595;
-    const pdfHeight = 842;
+    const pdfW = 595;
+    const pdfH = 842;
+    const marginInch = 72;
+    const contentW = pdfW - 2 * marginInch;
+    const scalePdf = contentW / canvas.width;
+    const renderW = canvas.width * scalePdf;
+    const renderH = canvas.height * scalePdf;
+    const renderX = marginInch;
+    const renderY = marginInch;
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    // Multi-page support: if content exceeds available page height, split
+    const pageH = pdfH - 2 * marginInch;
+    if (renderH <= pageH) {
+      pdf.addImage(imgData, "JPEG", renderX, renderY, renderW, renderH);
+    } else {
+      const pageCanvasPx = pageH / scalePdf;
+      let srcY = 0;
+      let pageNum = 0;
+      while (srcY < canvas.height) {
+        if (pageNum > 0) pdf.addPage();
+        const cropH = Math.min(pageCanvasPx, canvas.height - srcY);
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = cropH;
+        const ctx = tempCanvas.getContext("2d")!;
+        ctx.drawImage(canvas, 0, srcY, canvas.width, cropH, 0, 0, canvas.width, cropH);
+        pdf.addImage(tempCanvas.toDataURL("image/jpeg", 0.92), "JPEG", renderX, renderY, renderW, cropH * scalePdf);
+        srcY += cropH;
+        pageNum++;
+      }
+    }
 
     const fileName = `${employee.serialNo}_${employee.name.replace(/\s+/g, "_")}_${employee.position.replace(/\s+/g, "_")}.pdf`;
     pdf.save(fileName);
@@ -573,37 +683,79 @@ async function generateAllPdfFromHtml(
 
     const container = document.createElement("div");
     container.innerHTML = html;
-    container.style.position = "absolute";
-    container.style.left = "-10000px";
+
+    // Inject style reset to override Bootstrap's p margin that causes
+    // content to overflow the PDF page boundary.
+    const resetStyle = document.createElement("style");
+    resetStyle.textContent = `p { margin: 0 0 10px 0 !important; }`;
+    container.appendChild(resetStyle);
+
+    container.style.position = "fixed";
+    container.style.left = "-9999px";
     container.style.top = "0";
-    container.style.width = "595px";
-    container.style.padding = "50px 40px";
+    container.style.zIndex = "-1";
+    container.style.width = "451px";
+    container.style.padding = "0";
     container.style.background = "#ffffff";
+    container.style.color = "#000000";
+    container.style.fontWeight = "normal";
     container.style.fontFamily = '"Times New Roman", Times, serif';
     container.style.fontSize = "12px";
     container.style.lineHeight = "1.4";
     container.style.boxSizing = "border-box";
+    container.style.setProperty("-webkit-font-smoothing", "antialiased");
+    container.style.textRendering = "optimizeLegibility";
 
     document.body.appendChild(container);
 
     try {
+      // Wait for images inside the container to load
+      await waitForContainerImages(container);
+
       const canvas = await html2canvas(container, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
         removeContainer: false,
-        imageTimeout: 0,
+        imageTimeout: 15000,
         allowTaint: true,
       });
 
-      const imgData = canvas.toDataURL("image/png", 1.0);
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const pdf = new jsPDF("p", "pt", "a4");
 
-      const pdfWidth = 595;
-      const pdfHeight = 842;
+      const pdfW = 595;
+      const pdfH = 842;
+      const marginInch = 72;
+      const contentW = pdfW - 2 * marginInch;
+      const scalePdf = contentW / canvas.width;
+      const renderW = canvas.width * scalePdf;
+      const renderH = canvas.height * scalePdf;
+      const renderX = marginInch;
+      const renderY = marginInch;
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      // Multi-page support: if content exceeds available page height, split
+      const pageH = pdfH - 2 * marginInch;
+      if (renderH <= pageH) {
+        pdf.addImage(imgData, "JPEG", renderX, renderY, renderW, renderH);
+      } else {
+        const pageCanvasPx = pageH / scalePdf;
+        let srcY = 0;
+        let pageNum = 0;
+        while (srcY < canvas.height) {
+          if (pageNum > 0) pdf.addPage();
+          const cropH = Math.min(pageCanvasPx, canvas.height - srcY);
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = canvas.width;
+          tempCanvas.height = cropH;
+          const ctx = tempCanvas.getContext("2d")!;
+          ctx.drawImage(canvas, 0, srcY, canvas.width, cropH, 0, 0, canvas.width, cropH);
+          pdf.addImage(tempCanvas.toDataURL("image/jpeg", 0.92), "JPEG", renderX, renderY, renderW, cropH * scalePdf);
+          srcY += cropH;
+          pageNum++;
+        }
+      }
 
       const fileName = `${employee.serialNo}_${employee.name.replace(/\s+/g, "_")}_${employee.position.replace(/\s+/g, "_")}.pdf`;
       zip.file(fileName, pdf.output("blob"));

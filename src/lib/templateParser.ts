@@ -7,7 +7,20 @@ const STORAGE_KEY = 'raiseLetterTemplate';
 
 export function getStoredTemplate(): string {
   const stored = getItem(STORAGE_KEY);
-  return stored || DEFAULT_HTML_TEMPLATE;
+  if (stored) {
+    // Auto-migrate old saved templates to the latest compact table format.
+    // The original default had padding:8px, then padding:4px 8px — both are
+    // updated to padding:2px 8px so the sign-off block fits on one page.
+    let migrated = stored
+      .replace(/padding:[84]px(?: 8px)?; border:1px solid #000; text-align:left;/g, 'padding:2px 8px; border:1px solid #000; text-align:left;')
+      .replace(/padding:[84]px(?: 8px)?; border:1px solid #000;/g, 'padding:2px 8px; border:1px solid #000;')
+      .replace(/margin-top:1[06]px;/g, 'margin-top:4px;');
+    if (migrated !== stored) {
+      saveTemplate(migrated); // persist the migration
+    }
+    return migrated;
+  }
+  return DEFAULT_HTML_TEMPLATE;
 }
 
 export function saveTemplate(template: string): void {
@@ -32,20 +45,28 @@ export function parseTemplate(template: string, employee: EmployeeData): string 
   parsed = parsed.replace(/{lunchAllowance}/g, formatNumber(employee.lunchAllowance));
   parsed = parsed.replace(/{pfEmployer}/g, formatNumber(employee.pfEmployer));
   parsed = parsed.replace(/{total}/g, formatNumber(employee.total));
-  parsed = parsed.replace(/{signatoryName}/g, settings.signatoryName);
-  parsed = parsed.replace(/{signatoryDesignation}/g, settings.signatoryDesignation);
-
-  // Replace {signature} with an embedded image if available
-  if (settings.signature) {
-    parsed = parsed.replace(
-      /{signature}/g,
-      `<img src="${settings.signature}" alt="Signature" style="max-height: 60px; margin-top: 5px;" />`
-    );
-  } else {
-    parsed = parsed.replace(/{signature}/g, '');
-  }
-  parsed = parsed.replace(/{companyName}/g, settings.companyName);
   parsed = parsed.replace(/{subject}/g, settings.subject);
+
+  // Strip any sign-off placeholders from the template body; they'll be
+  // re-appended at the end so they always appear after "Thank You".
+  parsed = parsed.replace(/{signatoryName}/g, '');
+  parsed = parsed.replace(/{signatoryDesignation}/g, '');
+  parsed = parsed.replace(/{companyName}/g, '');
+  parsed = parsed.replace(/{signature}/g, '');
+
+  // Clean up any leftover empty <p> tags (including those with only <br>)
+  // that held the stripped placeholders
+  parsed = parsed.replace(/<p>\s*(<br\s*\/?>\s*)*<\/p>/gi, '');
+
+  // Always append the sign-off block after "Thank You" text
+  parsed += `\n<p style="margin-top:12px;">`;
+  if (settings.signature) {
+    parsed += `<img src="${settings.signature}" alt="Signature" style="display:block; max-width:200px; max-height:50px; margin-top:6px; margin-bottom:3px;" /><br>`;
+  }
+  parsed += `${settings.signatoryName}<br>`;
+  parsed += `${settings.signatoryDesignation}<br>`;
+  parsed += `${settings.companyName}`;
+  parsed += `</p>`;
 
   return parsed;
 }

@@ -9,25 +9,26 @@ export async function generateSinglePDF(
   employee: EmployeeData
 ): Promise<void> {
   const canvas = await html2canvas(element, {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     logging: false,
     backgroundColor: '#ffffff'
   });
 
-  const imgData = canvas.toDataURL('image/png');
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
   const pdf = new jsPDF('p', 'mm', 'a4');
 
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = canvas.width;
-  const imgHeight = canvas.height;
-  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-  const imgX = (pdfWidth - imgWidth * ratio) / 2;
-  const imgY = 10;
+  const marginMm = 25.4; // 1 inch = 25.4mm
+  const contentW = pdfWidth - 2 * marginMm;
+  const scalePdf = contentW / canvas.width;
+  const renderW = canvas.width * scalePdf;
+  const renderH = canvas.height * scalePdf;
+  const renderX = marginMm;
+  const renderY = marginMm;
 
-  const height = imgHeight * ratio;
-  pdf.addImage(imgData, 'PNG', imgX, imgY, pdfWidth - 20, height);
+  pdf.addImage(imgData, 'JPEG', renderX, renderY, renderW, renderH);
 
   const fileName = `${employee.serialNo}_${employee.name.replace(/\s+/g, '_')}_${employee.position.replace(/\s+/g, '_')}.pdf`;
   pdf.save(fileName);
@@ -44,25 +45,26 @@ export async function generateAllPDFsAsZip(
     const employee = employees[i];
 
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 3,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff'
     });
 
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
     const pdf = new jsPDF('p', 'mm', 'a4');
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const imgX = (pdfWidth - imgWidth * ratio) / 2;
-    const imgY = 10;
+    const marginMm = 25.4; // 1 inch = 25.4mm
+    const contentW = pdfWidth - 2 * marginMm;
+    const scalePdf = contentW / canvas.width;
+    const renderW = canvas.width * scalePdf;
+    const renderH = canvas.height * scalePdf;
+    const renderX = marginMm;
+    const renderY = marginMm;
 
-    const height = imgHeight * ratio;
-    pdf.addImage(imgData, 'PNG', imgX, imgY, pdfWidth - 20, height);
+    pdf.addImage(imgData, 'JPEG', renderX, renderY, renderW, renderH);
 
     const fileName = `${employee.serialNo}_${employee.name.replace(/\s+/g, '_')}_${employee.position.replace(/\s+/g, '_')}.pdf`;
     zip.file(fileName, pdf.output('blob'));
